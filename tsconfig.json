@@ -2,7 +2,7 @@
   "compilerOptions": {
     "module": "commonjs",
     "declaration": true,
-  "module": "commonjs",
+    "module": "commonjs",
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -26,20 +26,54 @@
       "@app/common/*": [
         "libs/common/src/*"
       ],
-      "@prisma": ["src/prisma"],
-      "@prisma/*": ["src/prisma/*"],
-      "@user": ["src/user"],
-      "@user/*": ["src/user/*"],
-      "@auth": ["src/auth"],
-      "@auth/*": ["src/auth/*"],
-      "@mail": ["src/mail"],
-      "@mail/*": ["src/mail/*"],
-      "@deck": ["src/deck"],
-      "@deck/*": ["src/deck/*"],
-      "@card": ["src/card"],
-      "@card/*": ["src/card/*"],
-      "@app/@types": ["@types"],
-      "@app/@types/*": ["@types/*"],
+      "@prisma": [
+        "src/prisma"
+      ],
+      "@prisma/*": [
+        "src/prisma/*"
+      ],
+      "@user": [
+        "src/user"
+      ],
+      "@user/*": [
+        "src/user/*"
+      ],
+      "@auth": [
+        "src/auth"
+      ],
+      "@auth/*": [
+        "src/auth/*"
+      ],
+      "@mail": [
+        "src/mail"
+      ],
+      "@mail/*": [
+        "src/mail/*"
+      ],
+      "@deck": [
+        "src/deck"
+      ],
+      "@deck/*": [
+        "src/deck/*"
+      ],
+      "@card": [
+        "src/card"
+      ],
+      "@card/*": [
+        "src/card/*"
+      ],
+      "@app/@types": [
+        "@types"
+      ],
+      "@app/@types/*": [
+        "@types/*"
+      ],
+      "@cron": [
+        "src/cron"
+      ],
+      "@cron/*": [
+        "src/cron/*"
+      ],
     }
   }
 }

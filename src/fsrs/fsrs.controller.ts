@@ -1,5 +1,13 @@
 import { CurrentUser } from '@app/common/decorators';
-import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+} from '@nestjs/common';
+import { UpdateParamsDto } from './dto';
 import { FsrsService } from './fsrs.service';
 
 @Controller('fsrs')
@@ -18,7 +26,16 @@ export class FsrsController {
   public async getGameCards(
     @Param('deckId') deckId: string,
     @CurrentUser('id') userId: string,
-  ) {
+  ) { 
     return this.fsrsService.getGameCards(deckId, userId);
+  }
+
+  @Patch('update-fsrs-cards-params')
+  public async updateFSRSCardsParams(
+    @Body() dto: UpdateParamsDto,
+    @CurrentUser('id') userId: string,
+  ) {
+    console.log('ok');
+    return this.fsrsService.updateFSRSCardsParams(dto, userId);
   }
 }

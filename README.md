@@ -3,23 +3,18 @@ on the whole app and throtalle
 test all backend
 statistics for all decks
 dto not using "," in category name
+fix micro loads on the decks preload or chaging directories
 
 .... think about changing complexity and algorithm on server or client implementation
 
 cards per session for every desk
 //TODO:
 add entity session
-fix last studies
 
 for categories new table
 
-add time for session\
+add time for session
 
-to trigger updatedAt
-await prisma.deck.update({
-where: { id: deckId },
-data: { updatedAt: new Date() },
-});
 
 //NOT MVP
 achivements

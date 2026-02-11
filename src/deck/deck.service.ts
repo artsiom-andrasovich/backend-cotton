@@ -110,7 +110,7 @@ export class DeckService {
   }
 
   private lastStudied(updatedAt: Date, totalTime: number) {
-    if (totalTime === 0) return 'Time to start learning!';
+    if (!totalTime) return 'Time to start learning!';
     return `${formatDistanceToNow(updatedAt, {
       addSuffix: true,
     })}`;

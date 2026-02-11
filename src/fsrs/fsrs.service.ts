@@ -1,7 +1,12 @@
 import { TFSRSCardWithCard } from '@app/@types';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { Deck } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
+import { UpdateFSRSCardsParamsDto, UpdateParamsDto } from './dto';
 
 @Injectable()
 export class FsrsService {
@@ -55,6 +60,7 @@ export class FsrsService {
           },
         },
         userId: true,
+        cardCount: true,
       },
     });
 
@@ -85,9 +91,6 @@ export class FsrsService {
           card: {
             deckId,
           },
-          due: {
-            lte: now,
-          },
         },
         orderBy: [{ difficulty: 'desc' }, { stability: 'asc' }, { due: 'asc' }],
         take: deck.deckSession.cardsPerSession,
@@ -96,6 +99,8 @@ export class FsrsService {
         },
       });
     }
+    console.log(cards);
+
     const formattedCards = cards.map(
       ({
         card: {
@@ -106,7 +111,7 @@ export class FsrsService {
           ...cardSpread
         },
         cardId,
-        id,
+
         ...val
       }) => ({
         ...cardSpread,
@@ -117,10 +122,70 @@ export class FsrsService {
     return formattedCards;
   }
 
+  public async updateFSRSCardsParams(dto: UpdateParamsDto, userId: string) {
+    console.log('sessionTimeMs');
+    console.log(dto.sessionTimeMs);
+    const deck = await this.prismaService.deck.findFirst({
+      where: {
+        id: dto.deckId,
+      },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+    await this.isUserDeck(deck, userId);
+    console.log('ok');
+    const cardIds = dto.cards.map((c) => c.cardId);
+
+    const validCardsCount = await this.prismaService.card.count({
+      where: {
+        id: { in: cardIds },
+        deckId: dto.deckId,
+      },
+    });
+
+    if (validCardsCount !== cardIds.length)
+      throw new ForbiddenException('Some cards not from this deck');
+
+    await this.updateValues(dto.cards);
+    await this.prismaService.deckSession.update({
+      where: {
+        deckId: dto.deckId,
+      },
+      data: {
+        totalTime: {
+          increment: dto.sessionTimeMs,
+        },
+      },
+    });
+    return;
+  }
+
   private async isUserDeck(deck: Partial<Deck>, userId: string) {
     if (deck.userId !== userId) {
       //TODO: in future with accessRights gonna be solved
       throw new BadRequestException('');
     }
+  }
+
+  private async updateValues(dto: UpdateFSRSCardsParamsDto[]) {
+    const updatePromises = dto.map(({ cardId, card }) =>
+      this.prismaService.fSRSCard.update({
+        where: { cardId: cardId },
+        data: { ...card },
+      }),
+    );
+
+    const logPromises = dto.map(({ card, log }) =>
+      this.prismaService.fSRSCardLog.create({
+        data: {
+          fsrsCardId: card.id,
+          ...log,
+        },
+      }),
+    );
+
+    await Promise.all([...updatePromises, ...logPromises]);
   }
 }
