@@ -43,7 +43,7 @@ export class AuthService {
       );
       throw new BadRequestException('Cannot sign up user with this data');
     }
-    const newUser = await this.userService.save(dto);
+    const newUser = await this.userService.save(dto, {});
     const activationCode = await this.prismaService.activationCode.findUnique({
       where: { userId: newUser.id },
     });
@@ -260,7 +260,7 @@ export class AuthService {
     email: string,
     agent: string,
     email_verified: string,
-    name: string,
+    GoogleUser: any,
   ) {
     this.logger.log(`Attempting Google Auth for: ${email}`);
     const userExist = await this.userService.findOne(email);
@@ -270,12 +270,21 @@ export class AuthService {
       );
       return this.generateTokens(userExist, agent);
     }
-    const user = await this.userService.save({
-      email,
-      name,
-      provider: Provider.GOOGLE,
-      isActivated: Boolean(email_verified),
-    });
+    //generate username
+    //TODO:
+    const { firstName, lastName, picture } = GoogleUser;
+    const user = await this.userService.save(
+      {
+        email,
+        provider: Provider.GOOGLE,
+        isActivated: Boolean(email_verified),
+      },
+      {
+        firstName,
+        lastName,
+        avatarPath: picture,
+      },
+    );
 
     if (!user) {
       this.logger.error(`Google Auth failed to create user for ${email}`);

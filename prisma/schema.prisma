@@ -21,8 +21,27 @@ model User {
   deckCategories    DeckCategory[]
   resetPasswordCode ResetPasswordCode?
   tokens            Token[]
+  profile           Profile?
 
   @@map("user")
+}
+
+enum Provider {
+  GOOGLE
+}
+
+model Profile {
+  id         String   @id @default(uuid())
+  firstName  String   @default("") @map("first_name")
+  lastName   String   @default("") @map("last_name")
+  avatarPath String   @default("avatar/defaultAvatar.jpg") @map("avatar_path")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique @map("user_id")
+
+  @@map("profile")
 }
 
 model ActivationCode {
@@ -178,8 +197,4 @@ model FSRSCardLog {
   @@index([review])
   @@index([fsrsCardId, review])
   @@map("FSRS_card_log")
-}
-
-enum Provider {
-  GOOGLE
 }

@@ -8,7 +8,7 @@ import { JwtPayload } from '@auth/interfaces';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ForbiddenException, Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { User } from '@prisma/client';
+import { Profile, User } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
 import { Cache } from 'cache-manager';
 import { ChangeUserDataDto } from './dto';
@@ -25,7 +25,10 @@ export class UserService {
     private readonly configService: ConfigService,
   ) {}
 
-  public async save(user: Partial<User>): Promise<User> {
+  public async save(
+    user: Partial<User>,
+    profile: Partial<Profile>,
+  ): Promise<User> {
     this.logger.log(
       `Saving user: ${user.email} (provider: ${user.provider || 'email'})`,
     );
@@ -37,6 +40,7 @@ export class UserService {
           password: null,
           provider: user?.provider,
           isActivated: user.isActivated,
+          profile: { create: { ...profile } },
         },
       });
       this.logger.log(`User created successfully: ${newUser.id}`);
@@ -52,6 +56,9 @@ export class UserService {
             code: generateSixDigitCode(),
             expiresAt: generateExpTime('1d'),
           },
+        },
+        profile: {
+          create: {},
         },
       },
     });

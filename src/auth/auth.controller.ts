@@ -132,7 +132,6 @@ export class AuthController {
     if (!token)
       return res.redirect(`${this.configService.get('API_URL')}/auth/google`);
 
-    const name = req.user['firstName'];
     const { accessToken, refreshToken }: any = await lastValueFrom(
       this.httpService
         .get(
@@ -140,7 +139,7 @@ export class AuthController {
         )
         .pipe(
           mergeMap(({ data: { email, email_verified } }) =>
-            this.authService.googleAuth(email, agent, email_verified, name),
+            this.authService.googleAuth(email, agent, email_verified, req.user),
           ),
           handleTimeoutAndErrors(),
         ),
