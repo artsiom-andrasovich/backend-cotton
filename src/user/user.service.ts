@@ -71,7 +71,6 @@ export class UserService {
 
     const cachedUser = await this.cacheManager.get<User>(idOrEmail);
     if (cachedUser) {
-      // this.logger.debug(`Cache hit for user: ${idOrEmail}`); // Optional: Too spammy?
       return cachedUser;
     }
 
