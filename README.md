@@ -8,13 +8,13 @@ fix micro loads on the decks preload or chaging directories
 .... think about changing complexity and algorithm on server or client implementation
 
 cards per session for every desk
-//TODO:
-add entity session
 
-for categories new table
-
-add time for session
-
+TODO: FRONTEND:
+implement delete for cards
+develop profile page
+develop settings page()
+fix decs blinking loading for decks and all cards
+develop strategy of notification
 
 //NOT MVP
 achivements

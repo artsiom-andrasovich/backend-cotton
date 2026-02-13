@@ -9,7 +9,7 @@ export class WeightsScheduler {
 
   constructor(
     private weightsService: WeightsService,
-    private prismaService: PrismaService
+    private prismaService: PrismaService,
   ) {}
 
   // FIX: If it will be realized for admin should be added queue
@@ -18,7 +18,7 @@ export class WeightsScheduler {
     this.logger.log('Starting optimization of weights');
 
     const categories = await this.prismaService.deckCategory.findMany({
-      select: { id: true, name: true }
+      select: { id: true, name: true },
     });
 
     for (const category of categories) {

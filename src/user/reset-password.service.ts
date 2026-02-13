@@ -13,6 +13,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma.service';
 import { compareSync } from 'bcrypt';
@@ -26,6 +27,8 @@ import { UserService } from './user.service';
 
 @Injectable()
 export class ResetPasswordService {
+  private readonly logger = new Logger(ResetPasswordService.name);
+
   constructor(
     private readonly userService: UserService,
     private readonly prismaService: PrismaService,
@@ -37,10 +40,15 @@ export class ResetPasswordService {
     userId: string,
     agent: string,
   ) {
+    this.logger.log(`Attempting to change password for user: ${userId}`);
     const user = await this.userService.findOne(userId);
 
-    if (!compareSync(user.password, dto.oldPassword) && user.password)
+    if (!compareSync(user.password, dto.oldPassword) && user.password) {
+      this.logger.warn(
+        `Password change failed: Old password incorrect for user ${userId}`,
+      );
       throw new ConflictException('Old password does not match');
+    }
     await Promise.all([
       this.prismaService.user.update({
         where: {
@@ -59,13 +67,20 @@ export class ResetPasswordService {
         },
       }),
     ]);
+    this.logger.log(`Password changed successfully for user: ${userId}`);
   }
 
   public async generateResetPasswordCode(
     email: string,
   ): Promise<UserWithResetPasswordCode | undefined> {
+    this.logger.log(`Generating reset password code for: ${email}`);
     const user = await this.userService.findOne(email);
-    if (!user) return undefined;
+    if (!user) {
+      this.logger.warn(
+        `Reset code generation failed: User not found for email ${email}`,
+      );
+      return undefined;
+    }
 
     const _resetCode = await this.prismaService.resetPasswordCode.findFirst({
       where: { userId: user.id },
@@ -74,8 +89,12 @@ export class ResetPasswordService {
       _resetCode &&
       _resetCode.attempts >= MAX_RESET_PASSWORD_ATTEMPTS &&
       isBefore(new Date(), _resetCode.expiresAt)
-    )
+    ) {
+      this.logger.warn(
+        `Reset code generation blocked: Rate limited for user ${user.id}`,
+      );
       throw new ForbiddenException('Try again later');
+    }
 
     let resetPasswordCode;
     if (_resetCode && !isBefore(new Date(), _resetCode.expiresAt)) {
@@ -102,6 +121,7 @@ export class ResetPasswordService {
         },
       });
     }
+    this.logger.log(`Reset password code generated for user: ${user.id}`);
     return {
       ...user,
       resetPasswordCode,
@@ -109,16 +129,29 @@ export class ResetPasswordService {
   }
 
   public async isValid(dto: IsValidResetPasswordCode) {
+    this.logger.log(`Validating reset password code for: ${dto.email}`);
     const user = await this.userService.findOne(dto.email);
-    if (!user) throw new BadRequestException('Invalid code, try again');
+    if (!user) {
+      this.logger.warn(
+        `Validation failed: User not found for email ${dto.email}`,
+      );
+      throw new BadRequestException('Invalid code, try again');
+    }
     const code = this.isNumberCode(dto.code);
     await this.checkIsValidCode(user.id, dto.email, code);
+    this.logger.log(`Reset code validated successfully for user: ${user.id}`);
     return { userId: user.id, code: dto.code };
   }
 
   public async changePasswordByCode(dto: ChangePasswordByCodeDto) {
+    this.logger.log(`Changing password by code for: ${dto.email}`);
     const user = await this.userService.findOne(dto.email);
-    if (!user) throw new BadRequestException('Invalid email or code');
+    if (!user) {
+      this.logger.warn(
+        `Change password failed: User not found for email ${dto.email}`,
+      );
+      throw new BadRequestException('Invalid email or code');
+    }
     const code = this.isNumberCode(dto.code);
 
     await this.checkIsValidCode(user.id, user.email, code);
@@ -137,6 +170,9 @@ export class ResetPasswordService {
         },
       }),
     ]);
+    this.logger.log(
+      `Password changed by code successfully for user: ${user.id}`,
+    );
   }
 
   private async checkIsValidCode(userId: string, email: string, code: number) {
@@ -145,9 +181,15 @@ export class ResetPasswordService {
         userId,
       },
     });
-    if (!data) throw new BadRequestException();
+    if (!data) {
+      this.logger.warn(
+        `Code check failed: No reset code found for user ${userId}`,
+      );
+      throw new BadRequestException();
+    }
     const { code: resetCode, expiresAt, attempts } = data;
     if (!isBefore(new Date(), expiresAt)) {
+      this.logger.log(`Code expired for user ${userId}, generating new code`);
       const newCode = await this.generateResetPasswordCode(email);
       if (!newCode) throw new BadRequestException();
       await this.mailService.sendResetPasswordCodeEmail(
@@ -159,6 +201,7 @@ export class ResetPasswordService {
       );
     }
     if (resetCode !== code) {
+      this.logger.warn(`Invalid code attempt for user ${userId}`);
       if (attempts < MAX_RESET_PASSWORD_ATTEMPTS) {
         const newExpires =
           attempts + 1 === MAX_RESET_PASSWORD_ATTEMPTS
@@ -175,11 +218,13 @@ export class ResetPasswordService {
             expiresAt: newExpires,
           },
         });
-        if (attempts + 1 === MAX_RESET_PASSWORD_ATTEMPTS)
+        if (attempts + 1 === MAX_RESET_PASSWORD_ATTEMPTS) {
+          this.logger.warn(`Max reset attempts reached for user ${userId}`);
           throw new HttpException(
             'Too many requests, try later',
             HttpStatus.TOO_MANY_REQUESTS,
           );
+        }
 
         throw new ForbiddenException('Invalid code, try again');
       }

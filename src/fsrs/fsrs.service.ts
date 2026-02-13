@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { Deck } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
@@ -10,9 +11,12 @@ import { UpdateFSRSCardsParamsDto, UpdateParamsDto } from './dto';
 
 @Injectable()
 export class FsrsService {
+  private readonly logger = new Logger(FsrsService.name);
+
   constructor(private readonly prismaService: PrismaService) {}
 
   public async getGameParams(deckId: string, userId: string) {
+    this.logger.log(`Fetching game params for deck: ${deckId} user: ${userId}`);
     const deck = await this.prismaService.deck.findFirst({
       where: {
         id: deckId,
@@ -48,6 +52,7 @@ export class FsrsService {
   }
 
   public async getGameCards(deckId: string, userId: string) {
+    this.logger.log(`Fetching game cards for deck: ${deckId} user: ${userId}`);
     const deck = await this.prismaService.deck.findFirst({
       where: {
         id: deckId,
@@ -99,7 +104,7 @@ export class FsrsService {
         },
       });
     }
-    console.log(cards);
+    this.logger.log(`Found ${cards.length} cards for game session`);
 
     const formattedCards = cards.map(
       ({
@@ -123,8 +128,9 @@ export class FsrsService {
   }
 
   public async updateFSRSCardsParams(dto: UpdateParamsDto, userId: string) {
-    console.log('sessionTimeMs');
-    console.log(dto.sessionTimeMs);
+    this.logger.log(`Updating FSRS params for deck: ${dto.deckId}`);
+    this.logger.debug(`Session time: ${dto.sessionTimeMs}ms`);
+
     const deck = await this.prismaService.deck.findFirst({
       where: {
         id: dto.deckId,
@@ -135,7 +141,7 @@ export class FsrsService {
       },
     });
     await this.isUserDeck(deck, userId);
-    console.log('ok');
+
     const cardIds = dto.cards.map((c) => c.cardId);
 
     const validCardsCount = await this.prismaService.card.count({
@@ -145,8 +151,12 @@ export class FsrsService {
       },
     });
 
-    if (validCardsCount !== cardIds.length)
+    if (validCardsCount !== cardIds.length) {
+      this.logger.warn(
+        `Update failed: Some cards do not belong to deck ${dto.deckId}`,
+      );
       throw new ForbiddenException('Some cards not from this deck');
+    }
 
     await this.updateValues(dto.cards);
     await this.prismaService.deckSession.update({
@@ -159,17 +169,22 @@ export class FsrsService {
         },
       },
     });
+    this.logger.log(`FSRS params updated successfully`);
     return;
   }
 
   private async isUserDeck(deck: Partial<Deck>, userId: string) {
     if (deck.userId !== userId) {
+      this.logger.warn(
+        `Access denied: User ${userId} tried to access deck belonging to ${deck.userId}`,
+      );
       //TODO: in future with accessRights gonna be solved
       throw new BadRequestException('');
     }
   }
 
   private async updateValues(dto: UpdateFSRSCardsParamsDto[]) {
+    this.logger.log(`Updating values for ${dto.length} cards`);
     const updatePromises = dto.map(({ cardId, card }) =>
       this.prismaService.fSRSCard.update({
         where: { cardId: cardId },
