@@ -1,9 +1,12 @@
-version: '3.5'
+version: '3.8'
 
 services:
   postgres:
     container_name: cotton_postgres_container
+    build: 
+      context: ./postgres/postgres 
     image: postgres:latest
+    restart: unless-stopped
     env_file:
       - .env
     environment:
@@ -17,11 +20,13 @@ services:
       - "5433:5432"
     networks:
       - cotton_network
-    restart: unless-stopped
 
   pgadmin:
     container_name: cotton_pgadmin_container
     image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    depends_on:
+      - postgres
     env_file:
       - .env
     environment:
@@ -33,7 +38,30 @@ services:
       - "5050:80"
     networks:
       - cotton_network
+
+  # --- STORAGE SECTION ---
+  minio:
+    container_name: minio_local
+    image: quay.io/minio/minio:RELEASE.2025-04-03T14-56-28Z
     restart: unless-stopped
+    command: server --console-address ":9001" /data
+    env_file:
+      - .env
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    networks:
+      - cotton_network
 
 networks:
   cotton_network:
@@ -42,3 +70,4 @@ networks:
 volumes:
   cotton_postgres_data:
   cotton_pgadmin_data:
+  minio_data:

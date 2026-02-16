@@ -102,7 +102,7 @@ export class UserService {
     await this.cacheManager.set(
       idOrEmailOrUsername,
       user,
-      convertToSecondsUtil(this.configService.get('JWT_EXP')),
+      convertToSecondsUtil(this.configService.get('JWT_EXP')) * 1000,
     );
     return user;
   }
