@@ -10,4 +10,8 @@ export class StatsController {
   public async getDashboardStats(@CurrentUser('id') userId: string) {
     return this.statsService.getDashboardStats(userId);
   }
+  @Get('profile')
+  public async getProfileStats(@CurrentUser('id') userId: string) {
+    return this.statsService.getProfileStats(userId);
+  }
 }

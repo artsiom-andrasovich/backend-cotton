@@ -8,3 +8,4 @@ export * from './handle-timeout-and-errors.util';
 export * from './hash-password.util';
 export * from './mask-email.util';
 export * from './parse-deck-cursor-value.util';
+export * from './safe-all-settled.util';

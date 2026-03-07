@@ -1,5 +1,6 @@
 import { IsPasswordsMatchingConstraint } from '@app/common/decorators';
 import {
+  IsOptional,
   IsString,
   IsStrongPassword,
   Length,
@@ -10,7 +11,8 @@ import {
 
 export class ChangePasswordDto {
   @IsString()
-  @Length(1, 50)
+  @IsOptional()
+  @Length(0, 50)
   oldPassword: string;
 
   @IsString()

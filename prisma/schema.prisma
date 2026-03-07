@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -117,15 +116,16 @@ model FSRSWeights {
 }
 
 model DeckSession {
-  id              String   @id @default(uuid())
-  mastery         Int      @default(0)
-  totalTime       Int      @default(0)
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  deckId          String   @unique @map("deck_id")
-  isShortTerm     Boolean  @default(false) @map("is_short_term")
-  cardsPerSession Int      @default(10) @map("cards_per_session")
-  deck            Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  id                 String   @id @default(uuid())
+  mastery            Int      @default(0)
+  totalTime          Int      @default(0)
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  deckId             String   @unique @map("deck_id")
+  isShortTerm        Boolean  @default(false) @map("is_short_term")
+  cardsPerSession    Int      @default(10) @map("cards_per_session")
+  masteredCardsCount Int      @default(0) @map("mastered_cards_count")
+  deck               Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
 
   @@index([mastery, deckId])
   @@index([updatedAt, deckId])

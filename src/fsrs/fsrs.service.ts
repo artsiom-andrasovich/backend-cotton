@@ -1,4 +1,5 @@
 import { TFSRSCardWithCard } from '@app/@types';
+import { safeAllSettled } from '@app/common/utils';
 import {
   BadRequestException,
   ForbiddenException,
@@ -159,6 +160,15 @@ export class FsrsService {
     }
 
     await this.updateValues(dto.cards);
+    //Event-driven action
+    const masteredCount = await this.prismaService.fSRSCard.count({
+      where: {
+        card: { deckId: dto.deckId },
+        state: 3,
+        stability: { gte: 21 },
+      },
+    });
+
     await this.prismaService.deckSession.update({
       where: {
         deckId: dto.deckId,
@@ -167,6 +177,7 @@ export class FsrsService {
         totalTime: {
           increment: dto.sessionTimeMs,
         },
+        masteredCardsCount: masteredCount,
       },
     });
     this.logger.log(`FSRS params updated successfully`);
@@ -201,6 +212,9 @@ export class FsrsService {
       }),
     );
 
-    await Promise.all([...updatePromises, ...logPromises]);
+    await safeAllSettled(
+      [...updatePromises, ...logPromises] as any,
+      this.logger,
+    );
   }
 }

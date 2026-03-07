@@ -5,7 +5,7 @@ services:
     container_name: cotton_postgres_container
     build: 
       context: ./postgres/postgres 
-    image: postgres:latest
+    image: postgres:17
     restart: unless-stopped
     env_file:
       - .env
@@ -20,7 +20,7 @@ services:
       - "5433:5432"
     networks:
       - cotton_network
-
+      
   pgadmin:
     container_name: cotton_pgadmin_container
     image: dpage/pgadmin4:latest
@@ -63,6 +63,18 @@ services:
     networks:
       - cotton_network
 
+  # --- CACHE SECTION ---
+  redis:
+    container_name: cotton_redis_container
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379" 
+    volumes:
+      - cotton_redis_data:/data 
+    networks:
+      - cotton_network 
+
 networks:
   cotton_network:
     driver: bridge
@@ -71,3 +83,4 @@ volumes:
   cotton_postgres_data:
   cotton_pgadmin_data:
   minio_data:
+  cotton_redis_data: 

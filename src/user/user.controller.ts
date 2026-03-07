@@ -67,7 +67,6 @@ export class UserController {
     return plainToClass(UserResponse, _user);
   }
 
-  // NOTE: IsActivatedGuard removed as per user instruction "doesnt use it"
   @UsePipes(new ValidationPipe())
   @Patch('change-password')
   public async changePassword(

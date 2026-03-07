@@ -89,7 +89,6 @@ export class WeightsService implements OnModuleDestroy {
     return new Promise((resolve, reject) => {
       const pythonPath = this.configService.get('PYTHON_EXECUTABLE');
 
-      // ИЗМЕНЕНИЕ 3: Передаем process.env и добавляем в Set
       const child = spawn(pythonPath, [scriptPath, csvPath], {
         cwd: path.resolve(process.cwd(), 'temp'),
         stdio: ['ignore', 'pipe', 'pipe'],

@@ -9,8 +9,6 @@ export class StatsService {
 
   public async getDashboardStats(userId: string) {
     const [aggregates, recentDecks] = await Promise.all([
-      // ЗАПРОС 1: Агрегация (Считаем общее время и кол-во колод)
-      // Мы обращаемся к таблице DeckSession (или где у тебя время), фильтруя по юзеру
       this.prismaService.deckSession.aggregate({
         where: {
           deck: { userId: userId },
@@ -22,7 +20,6 @@ export class StatsService {
           deckId: true, //Sum of all decks
         },
       }),
-
       //Last decks was trained
       this.prismaService.deck.findMany({
         where: { userId: userId },
@@ -62,6 +59,27 @@ export class StatsService {
         lastStudied: deck.deckSession?.updatedAt || new Date(),
         mastery: deck.deckSession?.mastery || 0,
       })),
+    };
+  }
+
+  public async getProfileStats(userId: string) {
+    //TODO: will be maybe achievements integrated in future
+    const statsSection = await this.prismaService.deckSession.aggregate({
+      where: { deck: { userId } },
+      _sum: {
+        masteredCardsCount: true,
+        totalTime: true,
+      },
+      _avg: {
+        mastery: true,
+      },
+    });
+    return {
+      stats: {
+        masteredCardsCount: statsSection._sum.masteredCardsCount,
+        studyTimeHours: Number((statsSection._sum.totalTime / 3600).toFixed(1)),
+        avgMastery: Math.ceil(statsSection._avg.mastery),
+      },
     };
   }
 }

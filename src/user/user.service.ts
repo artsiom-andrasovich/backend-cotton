@@ -3,6 +3,7 @@ import {
   generateExpTime,
   generateSixDigitCode,
   hashPassword,
+  safeAllSettled,
 } from '@app/common/utils';
 import { JwtPayload } from '@auth/interfaces';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -99,6 +100,9 @@ export class UserService {
       this.logger.warn(`User not found: ${idOrEmailOrUsername}`);
       return null;
     }
+    this.logger.warn(
+      `Seconds in cache: ${convertToSecondsUtil(this.configService.get('JWT_EXP')) * 1000}`,
+    );
     await this.cacheManager.set(
       idOrEmailOrUsername,
       user,
@@ -186,7 +190,11 @@ export class UserService {
     this.logger.debug(`Resetting cache keys: ${JSON.stringify(args)}`);
     if (typeof args === 'string') await this.cacheManager.del(args);
     else {
-      await Promise.all(args.map((key) => this.cacheManager.del(key)));
+      await safeAllSettled(
+        args.map((key) => this.cacheManager.del(key)),
+        this.logger,
+        'Clearing the cache',
+      );
     }
   }
 }

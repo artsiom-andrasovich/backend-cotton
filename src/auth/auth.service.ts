@@ -123,7 +123,7 @@ export class AuthService {
       throw new UnauthorizedException();
     }
     await this.prismaService.token
-      .delete({ where: { token: refreshToken } })
+      .deleteMany({ where: { token: refreshToken } })
       .catch((err) => {
         this.logger.error(`Failed to delete refresh token: ${err.message}`);
         throw new UnauthorizedException();
