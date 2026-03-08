@@ -54,8 +54,19 @@ export class UploadService {
   public async getSignedLink(path: string) {
     //TODO: if gonna be new oauth
     if (path.startsWith('https://lh3.googleusercontent.com')) return path;
-    const url = await getSignedUrl(
-      this.s3Client,
+
+    const signingClient = new S3Client({
+      region: this.configService.get('AWS_S3_REGION'),
+      credentials: {
+        accessKeyId: this.configService.get('AWS_ACCESS_KEY_ID'),
+        secretAccessKey: this.configService.get('AWS_SECRET_ACCESS_KEY'),
+      },
+      endpoint: this.configService.get('API_URL'),
+      forcePathStyle: true,
+    });
+
+    const signedUrl = await getSignedUrl(
+      signingClient,
       new GetObjectCommand({
         Bucket: this.configService.get('BUCKET_NAME'),
         Key: path,
@@ -63,10 +74,7 @@ export class UploadService {
       { expiresIn: 3600 },
     );
 
-    return url.replace(
-      /https?:\/\/[^\/]+/,
-      this.configService.get<string>('API_URL'),
-    );
+    return signedUrl;
   }
 
   private createRandomName() {
