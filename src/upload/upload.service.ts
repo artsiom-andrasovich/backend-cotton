@@ -54,13 +54,18 @@ export class UploadService {
   public async getSignedLink(path: string) {
     //TODO: if gonna be new oauth
     if (path.startsWith('https://lh3.googleusercontent.com')) return path;
-    return getSignedUrl(
+    const url = await getSignedUrl(
       this.s3Client,
       new GetObjectCommand({
         Bucket: this.configService.get('BUCKET_NAME'),
         Key: path,
       }),
       { expiresIn: 3600 },
+    );
+
+    return url.replace(
+      /https?:\/\/[^\/]+/,
+      this.configService.get<string>('API_URL'),
     );
   }
 
